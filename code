@@ -1,0 +1,52 @@
+import pandas as pd
+
+# Percorsi dei file 
+PATH_SECURITY = "data/raw/estat_isoc_cisce_ra.tsv.gz"
+PATH_CLOUD = "data/raw/estat_isoc_cicce_use.tsv.gz"
+PATH_ICT = "data/raw/estat_isoc_ci_it_en2.tsv.gz"
+
+
+# Funzione standard per leggere i file Eurostat
+def load_eurostat_tsv(path):
+    df = pd.read_csv(path, sep="\t", compression="gzip")
+    
+    # La prima colonna contiene dimensioni multiple separate da virgole
+    first_col = df.columns[0]
+    dims = first_col.split(",")
+
+    # Splitta la colonna dimensionale
+    df[dims] = df[first_col].str.split(",", expand=True)
+
+    # Rimuove la colonna originale
+    df = df.drop(columns=[first_col])
+
+    # Pulisce i valori (Eurostat usa ":" per missing)
+    df = df.replace(":", pd.NA)
+
+    # Converte tutte le colonne numeriche possibili
+    df = df.apply(pd.to_numeric, errors="ignore")
+
+    return df
+
+
+# Caricamento dataset
+df_security = load_eurostat_tsv(PATH_SECURITY)
+df_cloud = load_eurostat_tsv(PATH_CLOUD)
+df_ict = load_eurostat_tsv(PATH_ICT)
+
+
+# Filtra solo l’Italia (IT)
+df_security_it = df_security[df_security["geo"] == "IT"]
+df_cloud_it = df_cloud[df_cloud["geo"] == "IT"]
+df_ict_it = df_ict[df_ict["geo"] == "IT"]
+
+
+# Stampa di controllo
+print("\n=== ICT Security (IT) ===")
+print(df_security_it.head())
+
+print("\n=== Cloud Computing (IT) ===")
+print(df_cloud_it.head())
+
+print("\n=== ICT Usage (IT) ===")
+print(df_ict_it.head())
